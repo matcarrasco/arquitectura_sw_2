@@ -1,5 +1,5 @@
-# arquitectura_sw_2
-Entrega 2 de arquitectura de SW.
+# arquitectura_sw_3
+Entrega 3 de arquitectura de SW.
 
 Comandos para inicializar el proyecto:
 
