@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema de Última Milla</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            background: #e9ecef;
+            color: #6c757d;
+            transition: 0.3s;
+        }
+
+        .tab-btn.active {
+            background: #0d6efd;
+            color: white;
+            box-shadow: 0 4px 6px rgba(13, 110, 253, 0.2);
+        }
+
+        .panel {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        button.action-btn {
+            background: #198754;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+            font-size: 0.9em;
+        }
+
+        th {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .VALIDADO {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .ASIGNADO {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .EN_RUTA {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .ENTREGADO {
+            background: #e2e3e5;
+            color: #41464b;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.82em;
+            font-weight: bold;
+            margin-right: 4px;
+        }
+
+        .btn-asignar {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-enruta {
+            background: #0d6efd;
+            color: white;
+        }
+
+        .btn-entregar {
+            background: #198754;
+            color: white;
+        }
+
+        #resultadoTracking {
+            margin-top: 20px;
+            display: none;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .evento-item {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            margin: 8px 0;
+        }
+
+        .evento-dot {
+            width: 10px;
+            height: 10px;
+            background: #0d6efd;
+            border-radius: 50%;
+            margin-top: 5px;
+            flex-shrink: 0;
+        }
+
+        .evento-ts {
+            font-size: 0.75em;
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2 style="text-align:center;">Plataforma Logística Serverless</h2>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="cambiarTab('cliente', this)">Portal Cliente (Tracking)</button>
+            <button class="tab-btn" onclick="cambiarTab('operador', this)">Portal Operador (Gestión)</button>
+        </div>
+
+        <!-- PANEL CLIENTE -->
+        <div id="cliente" class="panel active">
+            <h3>Rastrear mi Producto</h3>
+            <p>Ingrese el número de seguimiento proporcionado al momento de su compra.</p>
+            <input type="text" id="busquedaId" placeholder="Ej: 1234">
+            <button class="action-btn" style="background:#0d6efd;" onclick="consultarTracking()">Buscar Pedido</button>
+
+            <div id="resultadoTracking">
+                <h4>Estado Actual: <span id="stTxt" class="status-badge"></span></h4>
+                <p><strong>Historial de eventos:</strong></p>
+                <div id="listaEventos"></div>
+            </div>
+        </div>
+
+        <!-- PANEL OPERADOR -->
+        <div id="operador" class="panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <h3 style="margin:0;">Panel de Control</h3>
+                <button class="action-btn" onclick="generarPedido()">+ Ingresar Nuevo Pedido</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Destino</th>
+                        <th>Peso</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoTabla">
+                    <tr>
+                        <td colspan="5" style="text-align:center;">No hay pedidos activos</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function cambiarTab(tabId, elemento) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            elemento.classList.add('active');
+            if (tabId === 'operador') listarPedidos();
+        }
+
+        // --- CLIENTE (Puerto 3000) ---
+        async function consultarTracking() {
+            const id = document.getElementById('busquedaId').value.trim();
+            if (!id) return alert("Ingrese un ID");
+
+            // Llama estrictamente al servicio de Pedidos
+            const res = await fetch(`http://localhost:3000/api/pedidos/${id}/tracking`);
+            const data = await res.json();
+
+            if (data.error) return alert("Pedido no encontrado. Verifique el ID.");
+
+            document.getElementById('resultadoTracking').style.display = 'block';
+            const badge = document.getElementById('stTxt');
+            badge.innerText = data.estado;
+            badge.className = `status-badge ${data.estado}`;
+
+            document.getElementById('listaEventos').innerHTML = data.eventos.map(e => `
+            <div class="evento-item">
+                <div class="evento-dot"></div>
+                <div>
+                    <div>${e.descripcion}</div>
+                    ${e.timestamp ? `<div class="evento-ts">${new Date(e.timestamp).toLocaleString('es-CL')}</div>` : ''}
+                </div>
+            </div>
+        `).join('');
+        }
+
+        // --- OPERADOR (Puertos Divididos) ---
+        async function generarPedido() {
+            const id = Math.floor(Math.random() * 9000) + 1000;
+            const destinos = ["Valparaíso", "Viña del Mar", "Santiago", "Concón", "Quilpué"];
+            const destino = destinos[Math.floor(Math.random() * destinos.length)];
+            const peso = Math.floor(Math.random() * 8) + 1;
+
+            // Se envía al servicio de Pedidos (Puerto 3000)
+            const res = await fetch('http://localhost:3000/api/pedidos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id.toString(), canal: "Web", peso, destino })
+            });
+            const data = await res.json();
+            if (data.error) alert(data.detalle || data.error);
+            else {
+                alert(`Pedido ${id} ingresado (${peso} kg → ${destino})`);
+                listarPedidos();
+            }
+        }
+
+        async function asignar(id) {
+            // Se envía al servicio de Repartidores y Logística (Puerto 4000)
+            const res = await fetch('http://localhost:4000/api/repartidores/asignar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idPedido: id })
+            });
+            const data = await res.json();
+            if (data.error) alert(data.error);
+            else listarPedidos();
+        }
+
+        async function marcarEnRuta(id) {
+            // Pasa por el puerto 3000 para actualizar los estados de los paquetes
+            const res = await fetch(`http://localhost:3000/api/pedidos/${id}/en-ruta`, { method: 'POST' });
+            const data = await res.json();
+            if (data.error) alert(data.error);
+            else listarPedidos();
+        }
+
+        async function marcarEntregado(id) {
+            // Pasa por el puerto 3000 para actualizar y liberar carga
+            const res = await fetch(`http://localhost:3000/api/pedidos/${id}/entregar`, { method: 'POST' });
+            const data = await res.json();
+            if (data.error) alert(data.error);
+            else listarPedidos();
+        }
+
+        async function listarPedidos() {
+            // Obtiene la lista unificada desde el puerto 3000
+            const res = await fetch('http://localhost:3000/api/pedidos');
+            const pedidos = await res.json();
+
+            if (!pedidos.length) {
+                document.getElementById('cuerpoTabla').innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay pedidos activos</td></tr>`;
+                return;
+            }
+
+            document.getElementById('cuerpoTabla').innerHTML = pedidos.map(p => {
+                let acciones = '';
+                if (p.estado_actual === 'VALIDADO')
+                    acciones = `<button class="btn-sm btn-asignar" onclick="asignar('${p.id_pedido}')">Asignar</button>`;
+                else if (p.estado_actual === 'ASIGNADO')
+                    acciones = `<button class="btn-sm btn-enruta" onclick="marcarEnRuta('${p.id_pedido}')">En Ruta</button>`;
+                else if (p.estado_actual === 'EN_RUTA')
+                    acciones = `<button class="btn-sm btn-entregar" onclick="marcarEntregado('${p.id_pedido}')">Entregar</button>`;
+                else
+                    acciones = `<span style="color:#888; font-size:0.85em;">✓ Completado</span>`;
+
+                return `
+                <tr>
+                    <td><strong>${p.id_pedido}</strong></td>
+                    <td>${p.datos_destino}</td>
+                    <td>${p.peso_volumen} kg</td>
+                    <td><span class="status-badge ${p.estado_actual}">${p.estado_actual}</span></td>
+                    <td>${acciones}</td>
+                </tr>
+            `;
+            }).join('');
+        }
+    </script>
+
+</body>
+
+</html>
