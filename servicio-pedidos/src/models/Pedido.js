@@ -1,4 +1,4 @@
-// Patrón State: Definimos los estados posibles según el E1
+// Definimos los estados posibles según el E1
 const Estados = {
     CREADO: 'CREADO',
     VALIDADO: 'VALIDADO',
