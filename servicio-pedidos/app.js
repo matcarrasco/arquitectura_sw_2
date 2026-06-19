@@ -5,11 +5,11 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
-// Sirve tu frontend (index.html) y la carpeta public
+
 app.use(express.static(__dirname));
 app.use(express.static('public'));
 
-// Registro exclusivo de Rutas de Pedidos
+// Registro de Rutas de Pedidos
 const pedidoRoutes = require('./src/routes/pedidoRoutes');
 app.use('/api/pedidos', pedidoRoutes);
 
